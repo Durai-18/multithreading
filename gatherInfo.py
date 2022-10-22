@@ -15,7 +15,6 @@ client = MongoClient(uri)
 db = client["db_name"]
 jobs_collection = db["collection_name"]
 
-
 def first():
 	result = {}
 	result["startedAt"]=datetime.now()
