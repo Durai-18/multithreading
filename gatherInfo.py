@@ -1,8 +1,11 @@
+import itertools
 import time
 import requests
 from pymongo import MongoClient
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from itertools import groupby
+from operator import itemgetter
 
 MONGO_HOST = "localhost" 
 MONGO_PORT = "27017"
@@ -19,30 +22,27 @@ def first():
 	result = {}
 	result["startedAt"]=datetime.now()
 	try:
-		response = requests.get("https://reqres.in/api/users")
-		result["result" ]= response.status_code		
+		response = requests.get("http://www.facebook.com")
+		result["result" ]= response.status_code
 	except Exception as e:
 		result["error"] = str(e)
 	finally:
 		result["endAt"]=datetime.now()
 		return result
 
-
 def second(): 
 	result = {}
 	result["startedAt"]=datetime.now()
 	try:
-		urls = ["https://www.lipsum.com/feed/html", "https://www.lipsum.com/feed/html", "http://www.twitter.com", "http://www.linkedin.com"]
-		for url in urls: 
-			response = requests.get(url)
-			result["result" ]= response.status_code
+		response = requests.get("http://www.twitter.com")
+		result["result" ]= response.status_code
 	except Exception as e:
 		result["error"] = str(e)
 	finally:
 		result["endAt"]=datetime.now()
 		return result   
 
-def third():   
+def third():
 	result = {}
 	result["startedAt"]=datetime.now()
 	try:
@@ -52,7 +52,7 @@ def third():
 		result["error"] = str(e)
 	finally:
 		result["endAt"]=datetime.now()
-		return result  
+		return result
 	
 def fourth():
 	result = {}
@@ -94,6 +94,7 @@ def main(job):
 	if job["event"] == "first":
 		res = first()
 		updateQuerry(res, job)
+
 	elif job["event"]== "second":
 		res = second()
 		updateQuerry(res, job)
@@ -113,15 +114,32 @@ def main(job):
 	else:
 		print("No works to do......")
 
+def works(value):	
+	if len(value)>0:
+		runner(value)
+
 def runner(jobs_queue):
 	with ThreadPoolExecutor(max_workers=5) as executor:
 		for job in jobs_queue:
-			executor.submit(main, job) 
+			executor.submit(main, job)
 
 while True:
-	jobs_queue =list(jobs_collection.find({'pssi':False}))   
-	if len(jobs_queue)>0: 
-		runner(jobs_queue)
+	jobs_queue =list(jobs_collection.find({'pssi':False}))
+	values = []
+
+	info = sorted(jobs_queue, key=itemgetter('tenantId'))	
+	for key, value in groupby(info, key=itemgetter('tenantId')):
+		values.append(list(value))
+	for value in range(len(values)):
+		globals()['value%s' %value] = []
+	if len(values)>0:
+		for val in range(len(values)):
+			globals()['value%s' %val].append(values[val])
+			globals()['value%s' %val] = list(itertools.chain(*globals()['value%s' %val]))
+		list_of_works = [value0, value1,value2,value3,value4]
+		with ThreadPoolExecutor(max_workers=5) as executor:
+			for value in list_of_works:
+				executor.submit(works,value)
 	else:
 		print("Let me sleep for 10 seconds...")
 		time.sleep(10)
