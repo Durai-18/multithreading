@@ -1,4 +1,3 @@
-import itertools
 import time
 import requests
 from pymongo import MongoClient
@@ -116,6 +115,7 @@ def main(job):
 
 def works(value):	
 	if len(value)>0:
+		print("start",datetime.now(), value)
 		runner(value)
 
 def runner(jobs_queue):
@@ -125,21 +125,13 @@ def runner(jobs_queue):
 
 while True:
 	jobs_queue =list(jobs_collection.find({'pssi':False}))
-	values = []
-
+	values={}
 	info = sorted(jobs_queue, key=itemgetter('tenantId'))	
 	for key, value in groupby(info, key=itemgetter('tenantId')):
-		values.append(list(value))
-	for value in range(len(values)):
-		globals()['value%s' %value] = []
-	if len(values)>0:
-		for val in range(len(values)):
-			globals()['value%s' %val].append(values[val])
-			globals()['value%s' %val] = list(itertools.chain(*globals()['value%s' %val]))
-		list_of_works = [value0, value1,value2,value3,value4]
-		with ThreadPoolExecutor(max_workers=5) as executor:
-			for value in list_of_works:
-				executor.submit(works,value)
-	else:
-		print("Let me sleep for 10 seconds...")
-		time.sleep(10)
+		values[key] = list(value)
+	with ThreadPoolExecutor(max_workers=5) as executor:
+		for key,value in values.items():
+			executor.submit(works,value)
+		else:
+			print("Let me sleep for 10 seconds...")
+			time.sleep(10)
